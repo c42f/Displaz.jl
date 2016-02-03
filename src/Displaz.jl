@@ -1,5 +1,6 @@
 module Displaz
 using Compat
+using FixedSizeArrays
 
 # Quick and nasty matlab-like plotting interface
 export plot3d, plot3d!, plot, clf, hold
@@ -278,6 +279,9 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
     nothing
 end
 
+# Interop with FixedSizeArrays.
+plot3d{V<:FixedVector{3}}(plotobj::DisplazWindow, position::Vector{V}; kwargs...) =
+    plot3d(plotobj, destructure(position); kwargs...)
 
 """
 Add points or lines to an existing 3D plot
