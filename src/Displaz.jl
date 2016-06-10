@@ -3,7 +3,7 @@ using Compat
 using FixedSizeArrays
 
 # Quick and nasty matlab-like plotting interface
-export plot3d, plot3d!, plot, clf, hold
+export plot3d, plot3d!, clearplot
 
 
 # Convert julia array into a type name and type appropriate for putting in the
@@ -167,7 +167,7 @@ end
 
 
 """
-Plot 3D points or lines on a new plot
+Add 3D points or lines to the current plot.
 
 ```
   plot3d([plotobj,] position; attr1=value1, ...)
@@ -235,7 +235,7 @@ position array into multiple line segments.  Each index in the line break array
 is the initial index of a line segment.
 """
 function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1], markershape=[0],
-                label=nothing, linebreak=[1], _clear_before_plot=true)
+                label=nothing, linebreak=[1], _overwrite_label=false)
     nvertices = size(position, 2)
     color = interpret_color(color)
     markershape = interpret_shape(markershape)
@@ -274,7 +274,7 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
     if label === nothing
         label = "$seriestype [$nvertices vertices]"
     end
-    addopt = _clear_before_plot ? [] : "-add"
+    addopt = _overwrite_label ? [] : "-add"
     run(`displaz -script $addopt -server $(plotobj.name) -label $label -shader generic_points.glsl -rmtemp $filename`)
     nothing
 end
@@ -284,12 +284,12 @@ plot3d{V<:FixedVector{3}}(plotobj::DisplazWindow, position::Vector{V}; kwargs...
     plot3d(plotobj, destructure(position); kwargs...)
 
 """
-Add points or lines to an existing 3D plot
+Overwrite points or lines with the same label on the 3D plot
 
 See plot3d for documentation
 """
 function plot3d!(plotobj::DisplazWindow, position; kwargs...)
-    plot3d(plotobj, position; _clear_before_plot=false, kwargs...)
+    plot3d(plotobj, position; _overwrite_label=true, kwargs...)
 end
 
 
@@ -298,32 +298,21 @@ plot3d!(position; kwargs...) = plot3d!(current(), position; kwargs...)
 plot3d(position; kwargs...)  = plot3d(current(), position; kwargs...)
 
 
-#-------------------------------------------------------------------------------
-# Deprecated junk
+"""
+    clearplot([plotobj::DisplazWindow=current()], [pattern1, ...])
 
-_hold = false
+Clear all or a subset of datasets in a plot window.
 
-function plot(position; color=[1 1 1], markersize=[0.1], markershape=[0], linebreak = [1])
-    Base.depwarn("plot() is deprecated.  Use plot3d() instead", :plot)
-    plot3d(position', color=color', markersize=markersize, markershape=markershape, linebreak=linebreak, _clear_before_plot=!_hold)
-end
-
-function hold()
-    Base.depwarn("hold() is deprecated.  Use plot3d() to make a new plot, and plot3d!() to add to an existing one", :hold)
-    global _hold
-    _hold = !_hold
-end
-
-function hold(h)
-    Base.depwarn("hold() is deprecated.  Use plot3d() to make a new plot, and plot3d!() to add to an existing one", :hold)
-    global _hold
-    _hold = Bool(h)
-end
-
-function clf()
-    Base.depwarn("clf() is deprecated.  Use plot3d() to make a new plot, and plot3d!() to add to an existing one", :clf)
-    run(`displaz -clear`)
+If not specified, `plotobj` is the current plot window.  If no patterns are
+supplied, clears all data sets.  If one or more patterns are given, the dataset
+labels matching those patterns will be removed.  Patterns shoudl be specified
+using unix shell glob pattern syntax.
+"""
+function clearplot(plotobj::DisplazWindow, patterns...)
+    unload_args = isempty(patterns) ? ["-clear"] : ["-unload", patterns...]
+    run(`displaz -script -server $(plotobj.name) $unload_args`)
     nothing
 end
+clearplot(patterns...) = clearplot(current(), patterns...)
 
 end

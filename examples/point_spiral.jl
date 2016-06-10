@@ -8,7 +8,7 @@ function example(N)
     C = vcat(t, 1.-t, zeros(t));
     sz  = map(Float32, t)
     shape = mod(rand(UInt8, N), 6)
-    plot3d(P, color = C, label="Top series", markershape=shape)
+    plot3d!(P, color = C, label="Top series", markershape=shape)
     P[3,:] = -P[3,:]
     plot3d!(P, color = C, markersize = sz, markershape="-", label="Bottom series")
 end
