@@ -2,9 +2,8 @@ module Displaz
 using Compat
 using FixedSizeArrays
 
-# Quick and nasty matlab-like plotting interface
 export plot3d, plot3d!, clearplot
-
+export KeyEvent, CursorPosition, event_loop
 
 # Convert julia array into a type name and type appropriate for putting in the
 # ply header
@@ -314,5 +313,7 @@ function clearplot(plotobj::DisplazWindow, patterns...)
     nothing
 end
 clearplot(patterns...) = clearplot(current(), patterns...)
+
+include("events.jl")
 
 end
