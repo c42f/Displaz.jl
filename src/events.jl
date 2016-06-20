@@ -51,3 +51,6 @@ function event_loop(callback::Function, event_list...)
     end
 end
 
+
+# Wait until the given displaz event occurs
+Base.wait(event::KeyEvent) = event_loop((e,a)->false, event=>Void)
