@@ -2,7 +2,7 @@ module Displaz
 using Compat
 using FixedSizeArrays
 
-export plot3d, plot3d!, clearplot
+export plot3d, plot3d!, clearplot, centerplot
 export KeyEvent, CursorPosition, event_loop
 
 # Convert julia array into a type name and type appropriate for putting in the
@@ -313,6 +313,18 @@ function clearplot(plotobj::DisplazWindow, patterns...)
     nothing
 end
 clearplot(patterns...) = clearplot(current(), patterns...)
+
+"""
+    centerplot([plotobj::DisplazWindow=current()], label)
+
+Center current window on the first dataset given by the `label`. If not specified,
+`plotobj` is the current plot window.
+"""
+function centerplot(plotobj::DisplazWindow, label::AbstractString)
+    run(`displaz -script -server $(plotobj.name) -viewlabel $label`)
+    nothing
+end
+centerplot(label::AbstractString) = centerplot(current(), label)
 
 include("events.jl")
 
