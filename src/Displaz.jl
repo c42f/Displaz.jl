@@ -2,7 +2,7 @@ module Displaz
 using Compat
 using FixedSizeArrays
 
-export plot3d, plot3d!, clearplot, centerplot
+export plot3d, plot3d!, clearplot, viewplot
 export KeyEvent, CursorPosition, event_loop
 
 # Convert julia array into a type name and type appropriate for putting in the
@@ -297,6 +297,7 @@ plot3d!(position; kwargs...) = plot3d!(current(), position; kwargs...)
 plot3d(position; kwargs...)  = plot3d(current(), position; kwargs...)
 
 
+#-------------------------------------------------------------------------------
 """
     clearplot([plotobj::DisplazWindow=current()], [pattern1, ...])
 
@@ -314,17 +315,53 @@ function clearplot(plotobj::DisplazWindow, patterns...)
 end
 clearplot(patterns...) = clearplot(current(), patterns...)
 
-"""
-    centerplot([plotobj::DisplazWindow=current()], label)
 
-Center current window on the first dataset given by the `label`. If not specified,
-`plotobj` is the current plot window.
+#-------------------------------------------------------------------------------
+# 3D camera control
 """
-function centerplot(plotobj::DisplazWindow, label::AbstractString)
-    run(`displaz -script -server $(plotobj.name) -viewlabel $label`)
+    viewplot([plotobj::DisplazWindow=current()], label)
+
+Set the point of view of the 3D camera.  The camera model is designed to view
+an object at a given `center` of rotation, with rotations pivoting around that
+position.
+
+If not specified, `plotobj` is the current plot window.  Keyword arguments
+define the camera view as follows:
+
+* The `center` argument may be a 3D point or the label of a data set.
+  If a label is supplied the centroid of the associated dataset will be used.
+* The `radius` argument should be a number giving the distance that the
+  camera will be away from the center of rotation.
+* The `rotation` argument specifies the angles at which the camera will view
+  the scene.  This should be a matrix transforming points into the standard
+  OpenGL camera coordinates (+x right, +y up, -z into the scene).
+
+"""
+function viewplot(plotobj::DisplazWindow;
+                  center=nothing, radius=nothing, rotation=nothing)
+    center_args   = viewplot_center_args(center)
+    radius_args   = viewplot_radius_args(radius)
+    rotation_args = viewplot_rotation_args(rotation)
+    run(`displaz -script -server $(plotobj.name) $center_args $radius_args $rotation_args`)
     nothing
 end
-centerplot(label::AbstractString) = centerplot(current(), label)
+viewplot(; kwargs...) = viewplot(current(); kwargs...)
+
+# viewplot() helper stuff
+# center
+viewplot_center_args(::Void) = []
+viewplot_center_args(s::AbstractString) = ["-viewlabel", string(s)]
+viewplot_center_args(pos) = ["-viewposition", string(pos[1]), string(pos[2]), string(pos[3])]
+# rotation
+viewplot_rotation_args(::Void) = []
+viewplot_rotation_args(M) = vcat("-viewrotation", map(string, vec(Matrix(M)'))) # Generate row-major order
+# radius
+viewplot_radius_args(::Void) = []
+viewplot_radius_args(r) = ["-viewradius", string(r)]
+
+
+#-------------------------------------------------------------------------------
+# Event loop
 
 include("events.jl")
 
