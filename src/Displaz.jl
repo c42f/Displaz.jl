@@ -23,7 +23,8 @@ ply_type_convert{T<:Real    }(a::AbstractArray{T}) = ("float64", map(Float64,a))
 
 const array_semantic = 0
 const vector_semantic = 1
-const color_semantic = 2
+const normal_semantic = 2
+const color_semantic = 3
 
 # get ply header property name for given field index and semantic
 function ply_property_name(semantic, idx)
@@ -31,6 +32,8 @@ function ply_property_name(semantic, idx)
         string(idx-1)
     elseif semantic == vector_semantic
         ("x", "y", "z", "w")[idx]
+    elseif semantic == normal_semantic
+        ("x", "y", "z")[idx]
     elseif semantic == color_semantic
         ("r", "g", "b")[idx]
     end
@@ -59,7 +62,7 @@ function write_ply_points(filename, nvertices, fields)
     end
 end
 
-function write_ply_lines(filename, position, color, linebreak)
+function write_ply_lines(filename, position, normal, color, linebreak)
     nvalidvertices = size(position,2)
 
     # Create and write to ply file
@@ -72,6 +75,10 @@ function write_ply_lines(filename, position, color, linebreak)
         property double x
         property double y
         property double z
+        element normal $nvalidvertices
+        property float x
+        property float y
+        property float z
         element color $nvalidvertices
         property float r
         property float g
@@ -83,6 +90,7 @@ function write_ply_lines(filename, position, color, linebreak)
     )
 
     write(fid,convert(Array{Float64,2},position))
+    write(fid,normal)
     write(fid,color)
 
     realstart = 0
@@ -104,6 +112,7 @@ function write_ply_lines(filename, position, color, linebreak)
 end
 
 #const standard_elements = [:position  => (vector_semantic,3),
+#                           :normal    => (normal_semantic,3),
 #                           :color     => (color_semantic,3),
 #                           :marksize  => (array_semantic,1),
 #                           :markshape => (array_semantic,1)]
@@ -117,6 +126,10 @@ const _color_names = @compat Dict('r' => [1.0, 0,   0],
                                   'k' => [0.0, 0,   0],
                                   'w' => [1.0, 1,   1])
 
+const _normal_names = @compat Dict( 'x' => [1.0, 0.0, 0.0],
+                                    'y' => [0.0, 1.0, 0.0],
+                                    'z' => [0.0, 0.0, 1.0])
+
 const _shape_ids = @compat Dict('.' => 0,
                                 's' => 1,
                                 'o' => 2,
@@ -127,6 +140,9 @@ const _shape_ids = @compat Dict('.' => 0,
 interpret_color(color) = color
 interpret_color(s::AbstractString) = length(s) == 1 ? interpret_color(s[1]) : error("Unknown color abbreviation $s")
 interpret_color(c::Char) = _color_names[c]
+interpret_normal(normal) = normal
+interpret_normal(s::AbstractString) = length(s) == 1 ? interpret_normal(s[1]) : error("Unknown normal abbreviation $s")
+interpret_normal(c::Char) = _normal_names[c]
 interpret_shape(markershape) = markershape
 interpret_shape(c::Char) = [_shape_ids[c]]
 interpret_shape(s::Vector{Char}) = Int[_shape_ids[c] for c in s]
@@ -199,6 +215,7 @@ Each point may have a set of vertex attributes attached to control the visual
 representation and tag the point for inspection. The following are supported by
 the default shader:
 
+  * `normal`      - A 3xN array of vertex normals
   * `color`       - A 3xN array of vertex colors
   * `markersize`  - Vertex marker size
   * `markershape` - Vector of vertex marker shapes.  Shape can be represented
@@ -233,28 +250,36 @@ When plotting lines, the `linebreak` keyword argument can be used to break the
 position array into multiple line segments.  Each index in the line break array
 is the initial index of a line segment.
 """
-function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1], markershape=[0],
+function plot3d(plotobj::DisplazWindow, position; normal=[0,0,1], color=[1,1,1],
+                markersize=[0.1], markershape=[0], shader="generic_points.glsl",
                 label=nothing, linebreak=[1], _overwrite_label=false)
     nvertices = size(position, 2)
+    normal = interpret_normal(normal)
     color = interpret_color(color)
     markershape = interpret_shape(markershape)
     linebreak = interpret_linebreak(nvertices, linebreak)
     size(position, 1) == 3 || error("position must be a 3xN array")
+    size(normal, 1)   == 3 || error("normal must be a 3xN array")
     size(color, 1)    == 3 || error("color must be a 3xN array")
     # FIXME in displaz itself.  No repmat waste should be required.
+    if size(normal,2) == 1
+        normal = repmat(normal, 1, nvertices)
+    end
     if size(color,2) == 1
         color = repmat(color, 1, nvertices)
     end
     # Ensure all fields are floats for now, to avoid surprising scaling in the
     # shader
+    normal = map(Float32,normal)
     color = map(Float32,color)
     markersize = map(Float32,markersize)
+    size(normal,2) == nvertices || error("normal must have same number of rows as position array")
     size(color,2) == nvertices || error("color must have same number of rows as position array")
     filename = tempname()*".ply"
     seriestype = "Points"
     if '-' in markershape # Plot lines
         seriestype = "Line"
-        write_ply_lines(filename, position, color, linebreak)
+        write_ply_lines(filename, position, normal, color, linebreak)
     else # Plot points
         if length(markersize) == 1
             markersize = repmat(markersize, 1, nvertices)
@@ -264,6 +289,7 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
         end
         write_ply_points(filename, nvertices, (
                          (:position, vector_semantic, position),
+                         (:normal, normal_semantic, normal),
                          (:color, color_semantic, color),
                          # FIXME: shape of markersize??
                          (:markersize, array_semantic, vec(markersize)'),
@@ -274,7 +300,7 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
         label = "$seriestype [$nvertices vertices]"
     end
     addopt = _overwrite_label ? [] : "-add"
-    run(`displaz -script $addopt -server $(plotobj.name) -label $label -shader generic_points.glsl -rmtemp $filename`)
+    run(`displaz -script $addopt -server $(plotobj.name) -label $label -shader $shader -rmtemp $filename`)
     nothing
 end
 
