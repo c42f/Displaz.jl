@@ -1,6 +1,7 @@
 module Displaz
 using Compat
 using FixedSizeArrays
+using ColorTypes
 
 export plot3d, plot3d!, clearplot, viewplot
 export KeyEvent, CursorPosition, event_loop
@@ -127,6 +128,7 @@ const _shape_ids = @compat Dict('.' => 0,
 interpret_color(color) = color
 interpret_color(s::AbstractString) = length(s) == 1 ? interpret_color(s[1]) : error("Unknown color abbreviation $s")
 interpret_color(c::Char) = _color_names[c]
+interpret_color(c::AbstractRGB) = [red(c), green(c), blue(c)]
 interpret_shape(markershape) = markershape
 interpret_shape(c::Char) = [_shape_ids[c]]
 interpret_shape(s::Vector{Char}) = Int[_shape_ids[c] for c in s]
