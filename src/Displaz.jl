@@ -1,6 +1,7 @@
 module Displaz
 using Compat
 using FixedSizeArrays
+using Colors
 
 export plot3d, plot3d!, clearplot, viewplot
 export KeyEvent, CursorPosition, event_loop
@@ -127,10 +128,24 @@ const _shape_ids = @compat Dict('.' => 0,
 interpret_color(color) = color
 interpret_color(s::AbstractString) = length(s) == 1 ? interpret_color(s[1]) : error("Unknown color abbreviation $s")
 interpret_color(c::Char) = _color_names[c]
+interpret_color(c::AbstractRGB) = [red(c), green(c), blue(c)]
+interpret_color(c::Color) = interpret_color(RGB(c))
+function interpret_color{T<:Color}(cs::AbstractVector{T})
+    a = zeros(eltype(T), (3,length(cs)))
+    for i=1:length(cs)
+        c = RGB(cs[i])
+        a[1,i] = red(c)
+        a[2,i] = green(c)
+        a[3,i] = blue(c)
+    end
+    a
+end
+
 interpret_shape(markershape) = markershape
 interpret_shape(c::Char) = [_shape_ids[c]]
 interpret_shape(s::Vector{Char}) = Int[_shape_ids[c] for c in s]
 interpret_shape(s::AbstractString) = Int[_shape_ids[c] for c in s]
+
 interpret_linebreak(nvertices, linebreak) = linebreak
 interpret_linebreak(nvertices, i::Integer) = i == 1 ? [1] : 1:i:nvertices
 
@@ -172,14 +187,10 @@ Add 3D points or lines to the current plot.
   plot3d([plotobj,] position; attr1=value1, ...)
 ```
 
-The `position` array should be a 3xN array of vertex positions. (This is
-consistent with treating the components of a single point as a column vector.
-It also has the same memory layout as an array of short `Vector3` instances
-from ImmutableArrays, for example).
-
-The `plotobj` argument is optional and determines which plot window to send the
-data to.  If it's not used the data will be sent to the plot window returned
-by `current()`.
+The `position` array should be a set of N vertex positions, specified as 3xN
+array or a `Vector` of `FixedVector{3}`.  The `plotobj` argument is optional
+and determines which plot window to send the data to.  If it's not used the
+data will be sent to the plot window returned by `current()`.
 
 TODO: Revisit the nasty decision of the shape of position again - the above
 choice is somewhat inconsistent with supplying markersize / markershape as a
@@ -199,7 +210,8 @@ Each point may have a set of vertex attributes attached to control the visual
 representation and tag the point for inspection. The following are supported by
 the default shader:
 
-  * `color`       - A 3xN array of vertex colors
+  * `color`       - A color or vector of colors for each point; see below for
+                    ways to specify these.
   * `markersize`  - Vertex marker size
   * `markershape` - Vector of vertex marker shapes.  Shape can be represented
                     either by a Char or a numeric identifier between 0 and 4:
@@ -209,6 +221,20 @@ the default shader:
                     circle - 'o' 2    times  - 'x' 3
                     cross  - '+' 4
 ```
+
+#### Specifying colors
+
+Colors may be provided in any of three ways:
+
+* As instances of types from the ColorTypes package, for example, HSV(180,1,1).
+  These are converted to RGB using the RGB constructor.
+* As a `Vector` of three elements, red, green and blue, between 0.0 and 1.0.
+* Using a matlab-like single color letter name string or `Char`.  Supported are
+  red, green, blue, cyan, magenta, yellow, black and white; all are abbreviated
+  with the first letter of the color name except black for which 'k' is used.
+
+A color per point may be supplied as a `Vector` of `Color` subtypes or a 3xN
+matrix with red, green and blue in the rows.
 
 
 ### Plotting points
