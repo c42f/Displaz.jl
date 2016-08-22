@@ -6,7 +6,9 @@ using Colors
 export plot3d, plot3d!, clearplot, viewplot
 export KeyEvent, CursorPosition, event_loop
 
-displaz_cmd() = get(ENV, "DISPLAZ_CMD", "displaz")
+set_displaz_cmd(cmd) = global _displaz_cmd = cmd
+set_displaz_cmd() = set_displaz_cmd(get(ENV, "DISPLAZ_CMD", "displaz"))
+set_displaz_cmd()
 
 # Convert julia array into a type name and type appropriate for putting in the
 # ply header
@@ -302,7 +304,7 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
         label = "$seriestype [$nvertices vertices]"
     end
     addopt = _overwrite_label ? [] : "-add"
-    run(`$(displaz_cmd()) -script $addopt -server $(plotobj.name) -label $label -shader generic_points.glsl -rmtemp $filename`)
+    run(`$_displaz_cmd -script $addopt -server $(plotobj.name) -label $label -shader generic_points.glsl -rmtemp $filename`)
     nothing
 end
 
@@ -338,7 +340,7 @@ using unix shell glob pattern syntax.
 """
 function clearplot(plotobj::DisplazWindow, patterns...)
     unload_args = isempty(patterns) ? ["-clear"] : ["-unload", patterns...]
-    run(`$(displaz_cmd()) -script -server $(plotobj.name) $unload_args`)
+    run(`$_displaz_cmd -script -server $(plotobj.name) $unload_args`)
     nothing
 end
 clearplot(patterns...) = clearplot(current(), patterns...)
@@ -370,7 +372,7 @@ function viewplot(plotobj::DisplazWindow;
     center_args   = viewplot_center_args(center)
     radius_args   = viewplot_radius_args(radius)
     rotation_args = viewplot_rotation_args(rotation)
-    run(`$(displaz_cmd()) -script -server $(plotobj.name) $center_args $radius_args $rotation_args`)
+    run(`$_displaz_cmd -script -server $(plotobj.name) $center_args $radius_args $rotation_args`)
     nothing
 end
 viewplot(; kwargs...) = viewplot(current(); kwargs...)
