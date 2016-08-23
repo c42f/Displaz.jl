@@ -222,11 +222,13 @@ The following attributes can be attached to a dataset on each call to `plot3d`:
 ### Vertex attributes
 
 Each point may have a set of vertex attributes attached to control the visual
-representation and tag the point for inspection. The following are supported by
-the default shader:
+representation and tag the point for inspection. You can pass any `Vector` of
+`Float32` values for any custom information you like, but the following are
+supported by the default shader:
 
   * `color`       - A color or vector of colors for each point; see below for
                     ways to specify these.
+  * `intensity`   - A vector of the intesity of each point (between 0 and 1)
   * `markersize`  - Vertex marker size
   * `markershape` - Vector of vertex marker shapes.  Shape can be represented
                     either by a Char or a numeric identifier between 0 and 4:
@@ -275,7 +277,7 @@ position array into multiple line segments.  Each index in the line break array
 is the initial index of a line segment.
 """
 function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1], markershape=[0],
-                label=nothing, linebreak=[1], _overwrite_label=false)
+                label=nothing, linebreak=[1], _overwrite_label=false, kwargs...)
     nvertices = size(position, 2)
     color = interpret_color(color)
     markershape = interpret_shape(markershape)
@@ -286,6 +288,10 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
     if size(color,2) == 1
         color = repmat(color, 1, nvertices)
     end
+
+    extra_fields = map(x -> (size(x[2]) == (nvertices,) || error("extra fields must be vectors of same length as number of points in position array") ;
+                                        (x[1], array_semantic, map(Float32, x[2]).')), kwargs) # works for vectors only at this stage...
+
     # Ensure all fields are floats for now, to avoid surprising scaling in the
     # shader
     color = map(Float32,color)
@@ -309,6 +315,7 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
                          # FIXME: shape of markersize??
                          (:markersize, array_semantic, vec(markersize)'),
                          (:markershape, array_semantic, vec(markershape)'),
+                         extra_fields...
                          ))
     end
     if label === nothing
