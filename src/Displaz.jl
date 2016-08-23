@@ -1,3 +1,5 @@
+__precompile__()
+
 module Displaz
 using Compat
 using FixedSizeArrays
@@ -6,9 +8,18 @@ using Colors
 export plot3d, plot3d!, clearplot, viewplot
 export KeyEvent, CursorPosition, event_loop
 
+"""
+    set_displaz_cmd(cmd)
+
+Set name or full path for where the displaz binary will be found to `cmd`.
+Defaults to the environment variable `DISPLAZ_CMD`, or the string `"displaz"`
+if that variable is not found.
+"""
 set_displaz_cmd(cmd) = global _displaz_cmd = cmd
-set_displaz_cmd() = set_displaz_cmd(get(ENV, "DISPLAZ_CMD", "displaz"))
-set_displaz_cmd()
+
+function __init__()
+    set_displaz_cmd(get(ENV, "DISPLAZ_CMD", "displaz"))
+end
 
 # Convert julia array into a type name and type appropriate for putting in the
 # ply header
