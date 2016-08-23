@@ -48,7 +48,7 @@ end
 function event_loop(callback::Function, event_list...)
     hookopts = [["-hook", _eventspec_str(e), _argspec_str(p)]
                 for (e,p) in event_list]
-    stdout,stdin,proc = readandwrite(`$(displaz_cmd()) $(vcat(hookopts...))`)
+    stdout,stdin,proc = readandwrite(`$_displaz_cmd $(vcat(hookopts...))`)
     while true
         rawline = readline(stdout)
         line = split(rawline)
