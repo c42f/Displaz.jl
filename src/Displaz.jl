@@ -228,7 +228,7 @@ supported by the default shader:
 
   * `color`       - A color or vector of colors for each point; see below for
                     ways to specify these.
-  * `intensity`   - A vector of the intesity of each point (between 0 and 1)
+  * `intensity`   - A vector of the intensity of each point (between 0 and 1)
   * `markersize`  - Vertex marker size
   * `markershape` - Vector of vertex marker shapes.  Shape can be represented
                     either by a Char or a numeric identifier between 0 and 4:
