@@ -7,9 +7,14 @@ end
 import Base: ==
 ==(e1::KeyEvent, e2::KeyEvent) = e1.spec == e2.spec
 
-
-immutable CursorPosition
-    pos::Point{3,Float64}
+@static if VERSION > v"0.5-"
+    immutable CursorPosition
+        pos::SVector{3,Float64}
+    end
+else
+    immutable CursorPosition
+        pos::Point{3,Float64}
+    end
 end
 
 
