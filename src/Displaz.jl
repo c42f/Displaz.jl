@@ -7,10 +7,14 @@ using Colors
 export plot3d, plot3d!, plotimage, plotimage!, clearplot, viewplot
 export KeyEvent, CursorPosition, event_loop
 
-if VERSION > v"0.5-" # Interop with StaticArrays
-    using StaticArrays
-else # Interop with FixedSizeArrays
+_use_FixedSizeArrays = VERSION < v"0.5-" || Pkg.installed("FixedSizeArrays") != nothing
+_use_StaticArrays = VERSION > v"0.5-"  # Or detect installation?
+
+if _use_FixedSizeArrays
     using FixedSizeArrays
+end
+if _use_StaticArrays
+    using StaticArrays
 end
 
 """
@@ -169,7 +173,7 @@ interpret_linebreak(nvertices, linebreak) = linebreak
 interpret_linebreak(nvertices, i::Integer) = i == 1 ? [1] : 1:i:nvertices
 
 interpret_position(pos::AbstractMatrix) = pos
-@static if VERSION > v"0.5-"
+if _use_StaticArrays
     function interpret_position{V <: StaticVector}(pos::AbstractVector{V})
         size(eltype(pos)) == (3,) || error("position should be a 3-vector")
         T = eltype(V)
@@ -177,7 +181,8 @@ interpret_position(pos::AbstractMatrix) = pos
         nvertices = length(pos)
         return reinterpret(T, pos, (3, nvertices))
     end
-else
+end
+if _use_FixedSizeArrays
     function interpret_position{V <: FixedVector{3}}(pos::AbstractVector{V})
         T = eltype(V)
         isbits(T) || error("Can't reinterpret position with elements $T")
