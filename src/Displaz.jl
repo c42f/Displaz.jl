@@ -137,8 +137,7 @@ const _shape_ids = @compat Dict('.' => 0,
                                 's' => 1,
                                 'o' => 2,
                                 'x' => 3,
-                                '+' => 4,
-                                '-' => '-')
+                                '+' => 4)
 
 interpret_color(color) = color
 interpret_color(s::AbstractString) = length(s) == 1 ? interpret_color(s[1]) : error("Unknown color abbreviation $s")
@@ -280,7 +279,6 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
                 label=nothing, linebreak=[1], _overwrite_label=false, kwargs...)
     nvertices = size(position, 2)
     color = interpret_color(color)
-    markershape = interpret_shape(markershape)
     linebreak = interpret_linebreak(nvertices, linebreak)
     size(position, 1) == 3 || error("position must be a 3xN array")
     size(color, 1)    == 3 || error("color must be a 3xN array")
@@ -299,13 +297,17 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
     size(color,2) == nvertices || error("color must have same number of rows as position array")
     filename = tempname()*".ply"
     seriestype = "Points"
-    if '-' in markershape # Plot lines
+    if markershape == "-" || markershape == '-'
+        # Plot lines
+        # FIXME: The way this is detected is a bit of a mess - lines vs points
+        # should be plotted using separate functions.
         seriestype = "Line"
         write_ply_lines(filename, position, color, linebreak)
     else # Plot points
         if length(markersize) == 1
             markersize = repmat(markersize, 1, nvertices)
         end
+        markershape = interpret_shape(markershape)
         if length(markershape) == 1
             markershape = repmat(markershape, 1, nvertices)
         end
