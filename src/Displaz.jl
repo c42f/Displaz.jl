@@ -1,7 +1,6 @@
 __precompile__()
 
 module Displaz
-using Compat
 using FixedSizeArrays
 using Colors
 
@@ -124,20 +123,20 @@ end
 #                           :marksize  => (array_semantic,1),
 #                           :markshape => (array_semantic,1)]
 
-const _color_names = @compat Dict('r' => [1.0, 0,   0],
-                                  'g' => [0.0, 0.8, 0],
-                                  'b' => [0.0, 0,   0.8],
-                                  'c' => [0.0, 1,   1],
-                                  'm' => [1.0, 0,   1],
-                                  'y' => [1.0, 1,   0],
-                                  'k' => [0.0, 0,   0],
-                                  'w' => [1.0, 1,   1])
+const _color_names = Dict('r' => [1.0, 0,   0],
+                          'g' => [0.0, 0.8, 0],
+                          'b' => [0.0, 0,   0.8],
+                          'c' => [0.0, 1,   1],
+                          'm' => [1.0, 0,   1],
+                          'y' => [1.0, 1,   0],
+                          'k' => [0.0, 0,   0],
+                          'w' => [1.0, 1,   1])
 
-const _shape_ids = @compat Dict('.' => 0,
-                                's' => 1,
-                                'o' => 2,
-                                'x' => 3,
-                                '+' => 4)
+const _shape_ids = Dict('.' => 0,
+                        's' => 1,
+                        'o' => 2,
+                        'x' => 3,
+                        '+' => 4)
 
 interpret_color(color) = color
 interpret_color(s::AbstractString) = length(s) == 1 ? interpret_color(s[1]) : error("Unknown color abbreviation $s")
