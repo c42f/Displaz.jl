@@ -365,6 +365,80 @@ end
 clearplot(patterns...) = clearplot(current(), patterns...)
 
 
+
+#-------------------------------------------------------------------------------
+# Texture file, first special case
+
+function write_ply(texturefile::String, vertices::AbstractArray, filename::String)
+
+    #plyname = "$texturefile.ply"
+    open(filename, "w") do f
+        write(f,
+            """
+            ply
+            format ascii 1.0
+            comment TextureFile $texturefile
+            element vertex 4
+            property double x
+            property double y
+            property double z
+            property double u
+            property double v
+            element face 1
+            property list int int vertex_index
+            end_header
+            $(vertices[1].x) $(vertices[1].y) $(vertices[1].z) 0 1
+            $(vertices[2].x) $(vertices[2].y) $(vertices[2].z) 1 1
+            $(vertices[3].x) $(vertices[3].y) $(vertices[3].z) 1 0
+            $(vertices[4].x) $(vertices[4].y) $(vertices[4].z) 0 0
+            4 0 1 2 3
+            """
+        )
+    end
+    nothing
+end
+
+
+function plottex(plotobj::DisplazWindow, texturefile, vertices; label=nothing, _overwrite_label=false, kwargs...)
+
+    filename = tempname()*".ply"
+
+    # File path has to be relative for shader
+    path_file = splitdir(filename)[1]
+    path_thumb, name_thumb = splitdir(texturefile)
+    path_thumb_rel = relpath(path_thumb, path_file)
+    texturefile = string(path_thumb_rel, "/", name_thumb)
+
+    write_ply(texturefile, vertices, filename)
+
+    if label === nothing
+        label = "$texturefile"
+    end
+    addopt = _overwrite_label ? [] : "-add"
+    run(`$_displaz_cmd -script $addopt -server $(plotobj.name) -label $label -rmtemp $filename`)
+    nothing
+end
+
+# Interop with FixedSizeArrays.
+plottex{V<:FixedVector{3}}(plotobj::DisplazWindow, texturefile::String, vertices::Vector{V}; kwargs...) =
+    plot3d(plotobj, destructure(vertices); kwargs...)
+
+"""
+Overwrite points or lines with the same label
+
+See plot3d for documentation
+"""
+function plottex!(plotobj::DisplazWindow, texturefile, vertices; kwargs...)
+    plottex(plotobj, texturefile, vertices; _overwrite_label=true, kwargs...)
+end
+
+# Plot to current window
+plottex!(texturefile, position; kwargs...) = plottex!(current(), texturefile, position; kwargs...)
+plottex(texturefile, position; kwargs...)  = plottex(current(), texturefile, position; kwargs...)
+
+
+
+
 #-------------------------------------------------------------------------------
 # 3D camera control
 """
