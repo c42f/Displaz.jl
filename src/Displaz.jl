@@ -371,7 +371,6 @@ clearplot(patterns...) = clearplot(current(), patterns...)
 
 function write_ply(texturefile::String, vertices::AbstractArray, filename::String)
 
-    #plyname = "$texturefile.ply"
     open(filename, "w") do f
         write(f,
             """
@@ -399,17 +398,17 @@ function write_ply(texturefile::String, vertices::AbstractArray, filename::Strin
 end
 
 
-function plottex(plotobj::DisplazWindow, texturefile, vertices; label=nothing, _overwrite_label=false, kwargs...)
+function plottex(plotobj::DisplazWindow, texturefile::String, vertices::AbstractArray; label=nothing, _overwrite_label=false, kwargs...)
 
     filename = tempname()*".ply"
-
+    #filename = string(tempname(), ".ply")
     # File path has to be relative for shader
-    path_file = splitdir(filename)[1]
-    path_thumb, name_thumb = splitdir(texturefile)
-    path_thumb_rel = relpath(path_thumb, path_file)
-    texturefile = string(path_thumb_rel, "/", name_thumb)
+    #path_file = splitdir(filename)[1]
+    #path_thumb, name_thumb = splitdir(texturefile)
+    #path_thumb_rel = relpath(path_thumb, path_file)
+    #texturefile = string(path_thumb_rel, "/", name_thumb)
 
-    write_ply(texturefile, vertices, filename)
+    write_ply(abspath(texturefile), vertices, filename)
 
     if label === nothing
         label = "$texturefile"
@@ -421,20 +420,20 @@ end
 
 # Interop with FixedSizeArrays.
 plottex{V<:FixedVector{3}}(plotobj::DisplazWindow, texturefile::String, vertices::Vector{V}; kwargs...) =
-    plot3d(plotobj, destructure(vertices); kwargs...)
+    plot3d(plotobj, texturefile, destructure(vertices); kwargs...)
 
 """
 Overwrite points or lines with the same label
 
 See plot3d for documentation
 """
-function plottex!(plotobj::DisplazWindow, texturefile, vertices; kwargs...)
+function plottex!(plotobj::DisplazWindow, texturefile::String, vertices::AbstractArray; kwargs...)
     plottex(plotobj, texturefile, vertices; _overwrite_label=true, kwargs...)
 end
 
 # Plot to current window
-plottex!(texturefile, position; kwargs...) = plottex!(current(), texturefile, position; kwargs...)
-plottex(texturefile, position; kwargs...)  = plottex(current(), texturefile, position; kwargs...)
+plottex!(texturefile, vertices; kwargs...) = plottex!(current(), texturefile, vertices; kwargs...)
+plottex(texturefile, vertices; kwargs...)  = plottex(current(), texturefile, vertices; kwargs...)
 
 
 
