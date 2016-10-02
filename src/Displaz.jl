@@ -367,9 +367,9 @@ clearplot(patterns...) = clearplot(current(), patterns...)
 
 
 #-------------------------------------------------------------------------------
-# Texture file, first special case
+# Texture file
 
-function write_ply(texturefile::String, vertices::AbstractArray, filename::String)
+function write_ply(texturefile::String, filename::String, vertices::AbstractArray, faces::AbstractArray)
 
     open(filename, "w") do f
         write(f,
@@ -377,38 +377,41 @@ function write_ply(texturefile::String, vertices::AbstractArray, filename::Strin
             ply
             format ascii 1.0
             comment TextureFile $texturefile
-            element vertex 4
+            element vertex $(size(vertices)[1])
             property double x
             property double y
             property double z
             property double u
             property double v
-            element face 1
+            element face $(size(faces)[1])
             property list int int vertex_index
             end_header
-            $(vertices[1].x) $(vertices[1].y) $(vertices[1].z) 0 1
-            $(vertices[2].x) $(vertices[2].y) $(vertices[2].z) 1 1
-            $(vertices[3].x) $(vertices[3].y) $(vertices[3].z) 1 0
-            $(vertices[4].x) $(vertices[4].y) $(vertices[4].z) 0 0
-            4 0 1 2 3
             """
         )
+        for i in 1:size(vertices)[1]
+            write(f,
+                """
+                $(join([vertices[i,j] for j in 1:5], " "))
+                """
+            )
+        end
+        for i in 1:size(faces)[1]
+            write(f,
+                """
+                $(join([faces[i,j] for j in 1:faces[i]+1], " "))
+                """
+            )
+        end
     end
     nothing
 end
 
 
-function plottex(plotobj::DisplazWindow, texturefile::String, vertices::AbstractArray; label=nothing, _overwrite_label=false, kwargs...)
+function plottex(plotobj::DisplazWindow, texturefile::String, vertices::AbstractArray, faces::AbstractArray; label=nothing, _overwrite_label=false, kwargs...)
 
     filename = tempname()*".ply"
-    #filename = string(tempname(), ".ply")
-    # File path has to be relative for shader
-    #path_file = splitdir(filename)[1]
-    #path_thumb, name_thumb = splitdir(texturefile)
-    #path_thumb_rel = relpath(path_thumb, path_file)
-    #texturefile = string(path_thumb_rel, "/", name_thumb)
 
-    write_ply(abspath(texturefile), vertices, filename)
+    write_ply(abspath(texturefile), filename, vertices, faces)
 
     if label === nothing
         label = "$texturefile"
@@ -418,22 +421,19 @@ function plottex(plotobj::DisplazWindow, texturefile::String, vertices::Abstract
     nothing
 end
 
-# Interop with FixedSizeArrays.
-plottex{V<:FixedVector{3}}(plotobj::DisplazWindow, texturefile::String, vertices::Vector{V}; kwargs...) =
-    plot3d(plotobj, texturefile, destructure(vertices); kwargs...)
 
 """
 Overwrite points or lines with the same label
 
 See plot3d for documentation
 """
-function plottex!(plotobj::DisplazWindow, texturefile::String, vertices::AbstractArray; kwargs...)
-    plottex(plotobj, texturefile, vertices; _overwrite_label=true, kwargs...)
+function plottex!(plotobj::DisplazWindow, texturefile::String, vertices::AbstractArray, faces::AbstractArray; kwargs...)
+    plottex(plotobj, texturefile, vertices, faces; _overwrite_label=true, kwargs...)
 end
 
 # Plot to current window
-plottex!(texturefile, vertices; kwargs...) = plottex!(current(), texturefile, vertices; kwargs...)
-plottex(texturefile, vertices; kwargs...)  = plottex(current(), texturefile, vertices; kwargs...)
+plottex!(texturefile, vertices, faces; kwargs...) = plottex!(current(), texturefile, vertices, faces; kwargs...)
+plottex(texturefile, vertices, faces; kwargs...)  = plottex(current(), texturefile, vertices, faces; kwargs...)
 
 
 
