@@ -4,7 +4,7 @@ module Displaz
 using FixedSizeArrays
 using Colors
 
-export plot3d, plot3d!, clearplot, viewplot
+export plot3d, plot3d!, plotimage, plotimage!, clearplot, viewplot
 export KeyEvent, CursorPosition, event_loop
 
 """
