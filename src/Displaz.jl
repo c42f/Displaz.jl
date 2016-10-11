@@ -4,7 +4,7 @@ module Displaz
 using FixedSizeArrays
 using Colors
 
-export plot3d, plot3d!, clearplot, viewplot
+export plot3d, plot3d!, plotimage, plotimage!, clearplot, viewplot
 export KeyEvent, CursorPosition, event_loop
 
 """
@@ -363,6 +363,88 @@ function clearplot(plotobj::DisplazWindow, patterns...)
     nothing
 end
 clearplot(patterns...) = clearplot(current(), patterns...)
+
+
+
+#-------------------------------------------------------------------------------
+# Texture file
+
+# Write image name (including absolute path) and vertices of the four corner to ply file
+function write_ply_texture(texturefile::String, filename::String, vertices::AbstractArray)
+
+    open(filename, "w") do f
+        write(f,
+            """
+            ply
+            format ascii 1.0
+            comment TextureFile $texturefile
+            element vertex 4
+            property double x
+            property double y
+            property double z
+            property double u
+            property double v
+            element face 1
+            property list int int vertex_index
+            end_header
+            $(vertices[1,1]) $(vertices[1,2]) $(vertices[1,3]) 0 1
+            $(vertices[2,1]) $(vertices[2,2]) $(vertices[2,3]) 1 1
+            $(vertices[3,1]) $(vertices[3,2]) $(vertices[3,3]) 1 0
+            $(vertices[4,1]) $(vertices[4,2]) $(vertices[4,3]) 0 0
+            4 0 1 2 3
+            """
+        )
+    end
+    nothing
+end
+
+
+"""
+Add images to the current plot.
+
+```
+  plotimage([plotobj,] texturefile, vertices; label=nothing, _overwrite_label=false)
+```
+
+The `texturefile` string should include the path (relative or absolute) to the
+image to be loaded (if not in the current folder).
+The `vertices` array should be a set of vertex positions specifying the corners
+of the image to plot. The order is anticlockwise starting from bottom left (i.e.
+(0,1), (1,1), (1,0), (0,0) in texture coordinates), and the vertices
+should be specified as a 3x4 array.
+The `plotobj` argument is optional and determines which plot window
+to send the data to.  If it's not used the data will be sent to the plot window
+returned by `current()`.
+"""
+function plotimage(plotobj::DisplazWindow, texturefile::String, vertices::AbstractArray; label=nothing, _overwrite_label=false)
+
+    filename = tempname()*".ply"
+
+    write_ply_texture(abspath(texturefile), filename, vertices)
+
+    if label === nothing
+        label = "$texturefile"
+    end
+    addopt = _overwrite_label ? [] : "-add"
+    run(`$_displaz_cmd -script $addopt -server $(plotobj.name) -label $label -rmtemp $filename`)
+    nothing
+end
+
+
+"""
+Overwrite images with the same label
+
+See plotimage for documentation
+"""
+function plotimage!(plotobj::DisplazWindow, texturefile::String, vertices::AbstractArray; kwargs...)
+    plotimage(plotobj, texturefile, vertices; _overwrite_label=true, kwargs...)
+end
+
+# Plot to current window
+plotimage!(texturefile, vertices; kwargs...) = plotimage!(current(), texturefile, vertices; kwargs...)
+plotimage(texturefile, vertices; kwargs...)  = plotimage(current(), texturefile, vertices; kwargs...)
+
+
 
 
 #-------------------------------------------------------------------------------
