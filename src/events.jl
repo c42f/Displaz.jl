@@ -22,7 +22,7 @@ _argspec_str(::Type{CursorPosition}) = "cursor"
 
 
 """
-    event_loop(callback::Function, event_list...)
+    event_loop(callback::Function, [plotobj::DisplazWindow], event_list...)
 
 Subscribe to a list of events, calling `callback` each time one is received.
 
@@ -45,10 +45,10 @@ Displaz.event_loop(
 end
 ```
 """
-function event_loop(callback::Function, event_list...)
+function event_loop(callback::Function, plotobj::DisplazWindow, event_list...)
     hookopts = [["-hook", _eventspec_str(e), _argspec_str(p)]
                 for (e,p) in event_list]
-    stdout,stdin,proc = readandwrite(`$_displaz_cmd $(vcat(hookopts...))`)
+    stdout,stdin,proc = readandwrite(`$_displaz_cmd -server $(plotobj.name) $(vcat(hookopts...))`)
     while true
         rawline = readline(stdout)
         line = split(rawline)
@@ -76,6 +76,7 @@ function event_loop(callback::Function, event_list...)
     end
 end
 
+event_loop(callback::Function, event_list...) = event_loop(callback, current(), event_list...)
 
 # Wait until the given displaz event occurs
 Base.wait(event::KeyEvent) = event_loop((e,a)->false, event=>Void)
