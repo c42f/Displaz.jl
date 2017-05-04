@@ -1,7 +1,6 @@
 __precompile__()
 
 module Displaz
-using Compat
 using Colors
 
 export plot3d, plot3d!, plotimage, plotimage!, clearplot, viewplot
