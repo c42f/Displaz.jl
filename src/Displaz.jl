@@ -358,11 +358,10 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
 end
 
 
-
 """
-    mutate!([plotobj,] index; attr1=value1, ...))
+    mutate!([plotobj,] label, index; attr1=value1, ...))
 
-Mutate the data in an existing displaz data set, for instance to change the
+Mutate the data in an existing displaz data set `label`, for instance to change the
 position or other attribute of a subset of points (with the advantage of
 reducing the amount of communication between Julia and displaz, and therefore
 increasing speed).
@@ -372,13 +371,12 @@ increasing speed).
 `position` attribute controls the vertex positions, and the remainder match
 the original plotting command.
 """
-function mutate!{I <: Integer}(index::AbstractVector{I}; label = nothing, kwargs...)
+function mutate!{I <: Integer}(label::AbstractString, index::AbstractVector{I}; kwargs...)
     plotobj = _current_figure
-    mutate!(plotobj, index; label = label, kwargs...)
+    mutate!(plotobj, label, index; kwargs...)
 end
 
-
-function mutate!{I <: Integer}(plotobj::DisplazWindow, index::AbstractVector{I}; label = nothing, kwargs...)
+function mutate!{I <: Integer}(plotobj::DisplazWindow, label::AbstractString, index::AbstractVector{I}; kwargs...)
     nvertices = length(index)
 
     fields = Vector{Any}()
@@ -429,19 +427,11 @@ function mutate!{I <: Integer}(plotobj::DisplazWindow, index::AbstractVector{I};
 
     filename = tempname()*".ply"
 
-    if label === nothing
-        seriestype = "Points"
-        label = "$seriestype [$nvertices vertices]"
-    end
-
     write_ply_points(filename, nvertices, fields)
     run(`$_displaz_cmd -script -modify -server $(plotobj.name) -label $label -shader generic_points.glsl $filename`)
     nothing
 
 end
-
-
-
 
 
 """
