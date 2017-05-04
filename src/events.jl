@@ -7,16 +7,9 @@ end
 import Base: ==
 ==(e1::KeyEvent, e2::KeyEvent) = e1.spec == e2.spec
 
-@static if VERSION > v"0.5-"
-    immutable CursorPosition
-        pos::SVector{3,Float64}
-    end
-else
-    immutable CursorPosition
-        pos::Point{3,Float64}
-    end
+immutable CursorPosition
+    pos::SVector{3,Float64}
 end
-
 
 _eventspec_str(s::AbstractString) = s
 _eventspec_str(e::KeyEvent) = "key:$(e.spec)"
