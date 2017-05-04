@@ -33,17 +33,18 @@ To plot a set of 5 vertices, and line series between a subset of these vertices:
 ```julia
 using Displaz
 using Colors
-using FixedSizeArrays
+using StaticArrays
 
 # Clear plots
 clearplot()
 
 N = 5
 # Random points
-position = rand(Point{3,Float64}, N)
+position = rand(SVector{3,Float64}, N)
 # Plot points
 plot3d!(position, color=[Gray{Float64}(i/N) for i=1:N], label="Example3 Points")
 # Plot a pair of line series between vertices 1:2 and 3:5
 plot3d!(position, color="r", linebreak=[1,3], markershape="-", label="Example3 Lines")
+# mutate the color of the first two points (efficient for modifying a subset of points)
+Displaz.mutate!("Example3 Points", 1:2; color = [Gray{Float64}(1.0)])
 ```
-

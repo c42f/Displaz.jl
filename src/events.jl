@@ -7,11 +7,9 @@ end
 import Base: ==
 ==(e1::KeyEvent, e2::KeyEvent) = e1.spec == e2.spec
 
-
 immutable CursorPosition
-    pos::Point{3,Float64}
+    pos::SVector{3,Float64}
 end
-
 
 _eventspec_str(s::AbstractString) = s
 _eventspec_str(e::KeyEvent) = "key:$(e.spec)"

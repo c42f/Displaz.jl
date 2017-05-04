@@ -1,7 +1,7 @@
 __precompile__()
 
 module Displaz
-using FixedSizeArrays
+using StaticArrays
 using Colors
 
 export plot3d, plot3d!, plotimage, plotimage!, clearplot, viewplot
@@ -162,6 +162,15 @@ interpret_shape(s::AbstractString) = Int[_shape_ids[c] for c in s]
 interpret_linebreak(nvertices, linebreak) = linebreak
 interpret_linebreak(nvertices, i::Integer) = i == 1 ? [1] : 1:i:nvertices
 
+interpret_position(pos::AbstractMatrix) = pos
+function interpret_position{V <: StaticVector}(pos::AbstractVector{V})
+    size(eltype(pos)) == (3,) || error("position should be a 3-vector")
+    T = eltype(V)
+    isbits(T) || error("Can't reinterpret position with elements $T")
+    nvertices = length(pos)
+    return reinterpret(T, pos, (3, nvertices))
+end
+
 # Multiple figure window support
 # TODO: Consider how the API below relates to Plots.jl and its tendency to
 # create a lot of new figure windows rather than clearing existing ones.
@@ -276,6 +285,7 @@ is the initial index of a line segment.
 """
 function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1], markershape=[0],
                 label=nothing, linebreak=[1], _overwrite_label=false, kwargs...)
+    position = interpret_position(position)
     nvertices = size(position, 2)
     color = interpret_color(color)
     linebreak = interpret_linebreak(nvertices, linebreak)
@@ -327,9 +337,82 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
     nothing
 end
 
-# Interop with FixedSizeArrays.
-plot3d{V<:FixedVector{3}}(plotobj::DisplazWindow, position::Vector{V}; kwargs...) =
-    plot3d(plotobj, destructure(position); kwargs...)
+
+"""
+    mutate!([plotobj,] label, index; attr1=value1, ...))
+
+Mutate the data in an existing displaz data set `label`, for instance to change the
+position or other attribute of a subset of points (with the advantage of
+reducing the amount of communication between Julia and displaz, and therefore
+increasing speed).
+
+`index` is vector of indices with reference to the original plot. The attribute
+`label` is used to match with the correct data set within displaz. The
+`position` attribute controls the vertex positions, and the remainder match
+the original plotting command.
+"""
+function mutate!{I <: Integer}(label::AbstractString, index::AbstractVector{I}; kwargs...)
+    plotobj = _current_figure
+    mutate!(plotobj, label, index; kwargs...)
+end
+
+function mutate!{I <: Integer}(plotobj::DisplazWindow, label::AbstractString, index::AbstractVector{I}; kwargs...)
+    nvertices = length(index)
+
+    fields = Vector{Any}()
+
+    push!(fields, (:index, array_semantic, map(UInt32, (index-1)'))) # It turns out the -1 is rather important (0-based indexing)... :)
+
+    for (fieldname, fielddata) ∈ kwargs
+        if fieldname == :position
+            fielddaata = interpret_position(fielddata)
+            size(fielddata) == (3,nvertices) || error("position must be a 3x$nvertices array")
+
+            push!(fields, (:position, vector_semantic, fielddata))
+        elseif fieldname == :color
+            fielddata = interpret_color(fielddata)
+            size(fielddata, 1) == 3 || error("color must be a 3xN array")
+            if size(fielddata,2) == 1
+                fielddata = repmat(fielddata, 1, nvertices)
+            end
+            size(fielddata) == (3,nvertices,) || error("wrong number of color points")
+            fielddata = map(Float32, fielddata)
+
+            push!(fields, (:color, color_semantic, fielddata))
+        elseif fieldname == :markershape
+            if length(fielddata) == 1
+                fielddata = repmat(fielddata, 1, nvertices)
+            end
+            size(fielddata) == (nvertices,) || error("wrong number of markershape points")
+            fielddata = interpret_shape(fielddata)
+
+            push!(fields, (:markershape, array_semantic, vec(fielddata)'))
+        elseif fieldname == :linebreak
+            if length(fielddata) == 1
+                fielddata = repmat(fielddata, 1, nvertices)
+            end
+            fielddata = interpret_linebreak(fielddata)
+
+            push!(fields, (:linebreak, array_semantic, vec(fielddata)'))
+        else
+            if length(fielddata) == 1
+                fielddata = repmat(fielddata, nvertices)
+            end
+            size(fielddata) == (nvertices,) || error("extra fields must be vectors of same length as index array")
+            fielddata = map(Float32, fielddata)
+
+            push!(fields, (fieldname, array_semantic, vec(fielddata)'))
+        end
+    end
+
+    filename = tempname()*".ply"
+
+    write_ply_points(filename, nvertices, fields)
+    run(`$_displaz_cmd -script -modify -server $(plotobj.name) -label $label -shader generic_points.glsl $filename`)
+    nothing
+
+end
+
 
 """
 Overwrite points or lines with the same label on the 3D plot
