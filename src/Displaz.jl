@@ -296,8 +296,11 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
         color = repmat(color, 1, nvertices)
     end
 
-    extra_fields = map(x -> (size(x[2]) == (nvertices,) || error("extra fields must be vectors of same length as number of points in position array") ;
-                                        (x[1], array_semantic, map(Float32, x[2]).')), kwargs) # works for vectors only at this stage...
+    extra_fields = map(kwargs) do arg
+        name, value = arg
+        size(value) == (nvertices,) || error("extra fields must be vectors of same length as number of points in position array")
+        (name, array_semantic, value.')
+    end
 
     # Ensure all fields are floats for now, to avoid surprising scaling in the
     # shader
