@@ -72,6 +72,7 @@ function event_loop(callback::Function, plotobj::DisplazWindow, event_list...)
         end
         callback(event, arg) != false || break
     end
+    kill(proc)
 end
 
 event_loop(callback::Function, event_list...) = event_loop(callback, current(), event_list...)
