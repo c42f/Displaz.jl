@@ -171,6 +171,11 @@ function interpret_position{V <: StaticVector}(pos::AbstractVector{V})
     return reinterpret(T, pos, (3, nvertices))
 end
 
+function interpret_position(pos::AbstractVector{T}) where T <: Real
+    size(pos) == (3,) || error("position should be a 3-vector")
+    return pos
+end
+
 # Multiple figure window support
 # TODO: Consider how the API below relates to Plots.jl and its tendency to
 # create a lot of new figure windows rather than clearing existing ones.
