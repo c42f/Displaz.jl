@@ -284,7 +284,7 @@ position array into multiple line segments.  Each index in the line break array
 is the initial index of a line segment.
 """
 function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1], markershape=[0],
-                label=nothing, linebreak=[1], _overwrite_label=false, kwargs...)
+                label=nothing, linebreak=[1], _overwrite_label=false, shader="generic_points.glsl", kwargs...)
     position = interpret_position(position)
     nvertices = size(position, 2)
     color = interpret_color(color)
@@ -333,7 +333,7 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
         label = "$seriestype [$nvertices vertices]"
     end
     addopt = _overwrite_label ? [] : "-add"
-    run(`$_displaz_cmd -script $addopt -server $(plotobj.name) -label $label -shader generic_points.glsl -rmtemp $filename`)
+    run(`$_displaz_cmd -script $addopt -server $(plotobj.name) -label $label -shader $shader -rmtemp $filename`)
     nothing
 end
 
