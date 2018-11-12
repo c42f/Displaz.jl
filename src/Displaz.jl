@@ -31,9 +31,9 @@ ply_type_convert(a::AbstractArray{Int32})    = ("int32",   a)
 ply_type_convert(a::AbstractArray{Float32})  = ("float32", a)
 ply_type_convert(a::AbstractArray{Float64})  = ("float64", a)
 # Generic cases - actually do a conversion
-ply_type_convert{T<:Unsigned}(a::AbstractArray{T}) = ("uint32",  map(UInt32,a))
-ply_type_convert{T<:Integer }(a::AbstractArray{T}) = ("int32",   map(Int32,a))
-ply_type_convert{T<:Real    }(a::AbstractArray{T}) = ("float64", map(Float64,a))
+ply_type_convert(a::AbstractArray{T}) where {T<:Unsigned} = ("uint32",  map(UInt32,a))
+ply_type_convert(a::AbstractArray{T}) where {T<:Integer}  = ("int32",   map(Int32,a))
+ply_type_convert(a::AbstractArray{T}) where {T<:Real}     = ("float64", map(Float64,a))
 
 
 const array_semantic = 0
@@ -60,7 +60,7 @@ function write_ply_points(filename, nvertices, fields)
         write(fid, "comment Displaz native\n")
         for ((name,semantic,_), (typename, value)) in zip(fields, converted_fields)
             n = size(value,2)
-            assert(n == nvertices || n == 1)
+            @assert(n == nvertices || n == 1)
             write(fid, "element vertex_$name $n\n")
             for i = 1:size(value,1)
                 propname = ply_property_name(semantic, i)
@@ -143,7 +143,7 @@ interpret_color(s::AbstractString) = length(s) == 1 ? interpret_color(s[1]) : er
 interpret_color(c::Char) = _color_names[c]
 interpret_color(c::AbstractRGB) = [red(c), green(c), blue(c)]
 interpret_color(c::Color) = interpret_color(RGB(c))
-function interpret_color{T<:Color}(cs::AbstractVector{T})
+function interpret_color(cs::AbstractVector{T}) where {T<:Color}
     a = zeros(eltype(T), (3,length(cs)))
     for i=1:length(cs)
         c = RGB(cs[i])
@@ -163,18 +163,18 @@ interpret_linebreak(nvertices, linebreak) = linebreak
 interpret_linebreak(nvertices, i::Integer) = i == 1 ? [1] : 1:i:nvertices
 
 interpret_position(pos::AbstractMatrix) = pos
-function interpret_position{V <: StaticVector}(pos::AbstractVector{V})
+function interpret_position(pos::AbstractVector{V}) where {V <: StaticVector}
     size(eltype(pos)) == (3,) || error("position should be a 3-vector")
     T = eltype(V)
-    isbits(T) || error("Can't reinterpret position with elements $T")
+    isbitstype(T) || error("Can't reinterpret position with elements $T")
     nvertices = length(pos)
-    return reinterpret(T, pos, (3, nvertices))
+    return reshape(reinterpret(T, pos), (3, nvertices))
 end
 
 # Multiple figure window support
 # TODO: Consider how the API below relates to Plots.jl and its tendency to
 # create a lot of new figure windows rather than clearing existing ones.
-type DisplazWindow
+mutable struct DisplazWindow
     name::AbstractString
 end
 
@@ -293,11 +293,11 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
     size(color, 1)    == 3 || error("color must be a 3xN array")
     # FIXME in displaz itself.  No repmat waste should be required.
     if size(color,2) == 1
-        color = repmat(color, 1, nvertices)
+        color = repeat(color, 1, nvertices)
     end
 
     extra_fields = map(x -> (size(x[2]) == (nvertices,) || error("extra fields must be vectors of same length as number of points in position array") ;
-                                        (x[1], array_semantic, map(Float32, x[2]).')), kwargs) # works for vectors only at this stage...
+                                        (x[1], array_semantic, permutedims(map(Float32, x[2])))), kwargs.data) # works for vectors only at this stage...
 
     # Ensure all fields are floats for now, to avoid surprising scaling in the
     # shader
@@ -314,11 +314,11 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
         write_ply_lines(filename, position, color, linebreak)
     else # Plot points
         if length(markersize) == 1
-            markersize = repmat(markersize, 1, nvertices)
+            markersize = repeat(markersize, 1, nvertices)
         end
         markershape = interpret_shape(markershape)
         if length(markershape) == 1
-            markershape = repmat(markershape, 1, nvertices)
+            markershape = repeat(markershape, 1, nvertices)
         end
         write_ply_points(filename, nvertices, (
                          (:position, vector_semantic, position),
@@ -351,12 +351,12 @@ increasing speed).
 `position` attribute controls the vertex positions, and the remainder match
 the original plotting command.
 """
-function mutate!{I <: Integer}(label::AbstractString, index::AbstractVector{I}; kwargs...)
+function mutate!(label::AbstractString, index::AbstractVector{I}; kwargs...) where {I <: Integer}
     plotobj = _current_figure
     mutate!(plotobj, label, index; kwargs...)
 end
 
-function mutate!{I <: Integer}(plotobj::DisplazWindow, label::AbstractString, index::AbstractVector{I}; kwargs...)
+function mutate!(plotobj::DisplazWindow, label::AbstractString, index::AbstractVector{I}; kwargs...) where {I <: Integer}
     nvertices = length(index)
 
     fields = Vector{Any}()
@@ -373,7 +373,7 @@ function mutate!{I <: Integer}(plotobj::DisplazWindow, label::AbstractString, in
             fielddata = interpret_color(fielddata)
             size(fielddata, 1) == 3 || error("color must be a 3xN array")
             if size(fielddata,2) == 1
-                fielddata = repmat(fielddata, 1, nvertices)
+                fielddata = repeat(fielddata, 1, nvertices)
             end
             size(fielddata) == (3,nvertices,) || error("wrong number of color points")
             fielddata = map(Float32, fielddata)
@@ -381,7 +381,7 @@ function mutate!{I <: Integer}(plotobj::DisplazWindow, label::AbstractString, in
             push!(fields, (:color, color_semantic, fielddata))
         elseif fieldname == :markershape
             if length(fielddata) == 1
-                fielddata = repmat(fielddata, 1, nvertices)
+                fielddata = repeat(fielddata, 1, nvertices)
             end
             size(fielddata) == (nvertices,) || error("wrong number of markershape points")
             fielddata = interpret_shape(fielddata)
@@ -389,14 +389,14 @@ function mutate!{I <: Integer}(plotobj::DisplazWindow, label::AbstractString, in
             push!(fields, (:markershape, array_semantic, vec(fielddata)'))
         elseif fieldname == :linebreak
             if length(fielddata) == 1
-                fielddata = repmat(fielddata, 1, nvertices)
+                fielddata = repeat(fielddata, 1, nvertices)
             end
             fielddata = interpret_linebreak(fielddata)
 
             push!(fields, (:linebreak, array_semantic, vec(fielddata)'))
         else
             if length(fielddata) == 1
-                fielddata = repmat(fielddata, nvertices)
+                fielddata = repeat(fielddata, nvertices)
             end
             size(fielddata) == (nvertices,) || error("extra fields must be vectors of same length as index array")
             fielddata = map(Float32, fielddata)
@@ -563,14 +563,14 @@ viewplot(; kwargs...) = viewplot(current(); kwargs...)
 
 # viewplot() helper stuff
 # center
-viewplot_center_args(::Void) = []
+viewplot_center_args(::Nothing) = []
 viewplot_center_args(s::AbstractString) = ["-viewlabel", string(s)]
 viewplot_center_args(pos) = ["-viewposition", string(pos[1]), string(pos[2]), string(pos[3])]
 # rotation
-viewplot_rotation_args(::Void) = []
+viewplot_rotation_args(::Nothing) = []
 viewplot_rotation_args(M) = vcat("-viewrotation", map(string, vec(Matrix(M)'))) # Generate row-major order
 # radius
-viewplot_radius_args(::Void) = []
+viewplot_radius_args(::Nothing) = []
 viewplot_radius_args(r) = ["-viewradius", string(r)]
 
 
