@@ -1,14 +1,11 @@
-using Compat
-
-
 function displaz_version()
     displaz_cmd = get(ENV, "DISPLAZ_CMD", "displaz")
     try
-        verstring = readstring(`$displaz_cmd -version`)
-        m = match(r"version *(.*)-g.*", verstring)
-        VersionNumber(m[1])
+        verstring = read(`$displaz_cmd -version`, String)
+        m = match(r"version *([\d\.]*)-?", verstring)
+        VersionNumber(m.captures[1])
     catch err
-        warn(err)
+        @warn(err)
         nothing
     end
 end
@@ -16,7 +13,7 @@ end
 ver = displaz_version()
 
 if ver === nothing
-    warn(
+    @warn(
         """
         displaz could not be found - please check that you have it installed
         (for now, you will need to build it from source - see
@@ -26,7 +23,7 @@ if ver === nothing
         """
     )
 elseif ver < v"0.3.1-317"
-    warn(
+    @warn(
         """
         You have an older version ($ver) of displaz.  You should upgrade
         to the latest version to ensure the Displaz.jl bindings work correctly.

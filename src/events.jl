@@ -1,13 +1,13 @@
 # Hooks and event loop functionality
 
-immutable KeyEvent
+struct KeyEvent
     spec::AbstractString
 end
 
 import Base: ==
 ==(e1::KeyEvent, e2::KeyEvent) = e1.spec == e2.spec
 
-immutable CursorPosition
+struct CursorPosition
     pos::SVector{3,Float64}
 end
 
@@ -15,7 +15,7 @@ _eventspec_str(s::AbstractString) = s
 _eventspec_str(e::KeyEvent) = "key:$(e.spec)"
 
 _argspec_str(s::AbstractString) = s
-_argspec_str(::Type{Void}) = "null"
+_argspec_str(::Type{Nothing}) = "null"
 _argspec_str(::Type{CursorPosition}) = "cursor"
 
 
@@ -28,12 +28,12 @@ Each event comes with some optional some state which is attached at the time
 the event is triggered.  The events are specified as a list of `event=>state`
 pairs.
 
-Currently only `KeyEvent` is supported, with the possible arguments `Void` or
+Currently only `KeyEvent` is supported, with the possible arguments `Nothing` or
 `CursorPosition`.  For example:
 
 ```
 Displaz.event_loop(
-        KeyEvent("c")=>Void,
+        KeyEvent("c")=>Nothing,
         KeyEvent("p")=>CursorPosition
 ) do event, arg
     @show event, arg
@@ -78,4 +78,4 @@ end
 event_loop(callback::Function, event_list...) = event_loop(callback, current(), event_list...)
 
 # Wait until the given displaz event occurs
-Base.wait(event::KeyEvent) = event_loop((e,a)->false, event=>Void)
+Base.wait(event::KeyEvent) = event_loop((e,a)->false, event=>Nothing)
