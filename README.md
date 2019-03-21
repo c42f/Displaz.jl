@@ -3,6 +3,14 @@
 Bindings for the [displaz lidar viewer](https://github.com/c42f/displaz) for
 flexible three dimensional plotting of large point clouds, lines and meshes.
 
+## Installation
+
+Check the [installation instructions](https://github.com/c42f/displaz#installation) at displaz's repository.
+Then install `Displaz.jl` using the REPL `Pkg` mode:
+```julia
+(v1.0) pkg> add Displaz
+```
+
 ## Quickstart
 
 To plot a point cloud of 10⁵ points, where every point position is a column in a
