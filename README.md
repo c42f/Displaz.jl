@@ -6,13 +6,9 @@ flexible three dimensional plotting of large point clouds, lines and meshes.
 ## Installation
 
 Check the [installation instructions](https://github.com/c42f/displaz#installation) at displaz's repository.
-Then install `Displaz.jl` in the REPL:
+Then install `Displaz.jl` using the REPL `Pkg` mode:
 ```julia
 (v1.0) pkg> add Displaz
-```
-or get the latest via:
-```julia
-(v1.0) pkg> add Displaz#master
 ```
 
 ## Quickstart
