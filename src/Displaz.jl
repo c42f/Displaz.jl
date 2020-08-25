@@ -552,7 +552,9 @@ define the camera view as follows:
   camera will be away from the center of rotation.
 * The `rotation` argument specifies the angles at which the camera will view
   the scene.  This should be a matrix transforming points into the standard
-  OpenGL camera coordinates (+x right, +y up, -z into the scene).
+  OpenGL camera coordinates (+x right, +y up, -z into the scene). Alternatively
+  may also give rotation has a  Tuple{Float64,Float64,Float64} representing yaw,
+  pitch and roll in degrees.
 
 """
 function viewplot(plotobj::DisplazWindow;
@@ -572,6 +574,7 @@ viewplot_center_args(s::AbstractString) = ["-viewlabel", string(s)]
 viewplot_center_args(pos) = ["-viewposition", string(pos[1]), string(pos[2]), string(pos[3])]
 # rotation
 viewplot_rotation_args(::Nothing) = []
+viewplot_rotation_args(r::Tuple{Float64,Float64,Float64}) =  vcat("-viewangles", map(i->string(r[i]), 1:3)) #  Set view angles in degrees (yaw, pitch, roll). Equivalent to -viewrotation with rotation matrix R_z(roll)*R_x(pitch-90)*R_z(yaw)
 viewplot_rotation_args(M) = vcat("-viewrotation", map(string, vec(Matrix(M)'))) # Generate row-major order
 # radius
 viewplot_radius_args(::Nothing) = []
