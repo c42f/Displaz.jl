@@ -537,7 +537,8 @@ plotimage(texturefile, vertices; kwargs...)  = plotimage(current(), texturefile,
 #-------------------------------------------------------------------------------
 # 3D camera control
 """
-    viewplot([plotobj::DisplazWindow=current()], label)
+    viewplot([plotobj::DisplazWindow=current()];
+             center=point_or_label, radius=dist_from_center, rotation=rot_matrix)
 
 Set the point of view of the 3D camera.  The camera model is designed to view
 an object at a given `center` of rotation, with rotations pivoting around that
