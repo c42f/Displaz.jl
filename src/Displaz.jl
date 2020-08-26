@@ -574,7 +574,7 @@ viewplot_center_args(s::AbstractString) = ["-viewlabel", string(s)]
 viewplot_center_args(pos) = ["-viewposition", string(pos[1]), string(pos[2]), string(pos[3])]
 # rotation
 viewplot_rotation_args(::Nothing) = []
-viewplot_rotation_args(r::Tuple{Float64,Float64,Float64}) =  vcat("-viewangles", map(i->string(r[i]), 1:3)) #  Set view angles in degrees (yaw, pitch, roll). Equivalent to -viewrotation with rotation matrix R_z(roll)*R_x(pitch-90)*R_z(yaw)
+viewplot_rotation_args(r::Tuple{Float64,Float64,Float64}) =  vcat("-viewangles", string.(r)) #  Set view angles in degrees (yaw, pitch, roll). Equivalent to -viewrotation with rotation matrix R_z(roll)*R_x(pitch-90)*R_z(yaw)
 viewplot_rotation_args(M) = vcat("-viewrotation", map(string, vec(Matrix(M)'))) # Generate row-major order
 # radius
 viewplot_radius_args(::Nothing) = []
