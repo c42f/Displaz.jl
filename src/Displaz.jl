@@ -551,10 +551,11 @@ define the camera view as follows:
 * The `radius` argument should be a number giving the distance that the
   camera will be away from the center of rotation.
 * The `rotation` argument specifies the angles at which the camera will view
-  the scene.  This should be a matrix transforming points into the standard
-  OpenGL camera coordinates (+x right, +y up, -z into the scene). Alternatively
-  may also give rotation has a  Tuple{Float64,Float64,Float64} representing yaw,
-  pitch and roll in degrees.
+  the scene. This can be a matrix transforming points into the standard OpenGL
+  camera coordinates (+x right, +y up, -z into the scene). Alternatively you
+  may supply a tuple `(yaw, pitch, roll)` in degrees which is equivalent to
+  using the rotation matrix `RotZXZ(deg2rad(roll), deg2rad(pitch-90), deg2rad(yaw))`
+  from Rotations.jl.
 
 """
 function viewplot(plotobj::DisplazWindow;
@@ -574,8 +575,9 @@ viewplot_center_args(s::AbstractString) = ["-viewlabel", string(s)]
 viewplot_center_args(pos) = ["-viewposition", string(pos[1]), string(pos[2]), string(pos[3])]
 # rotation
 viewplot_rotation_args(::Nothing) = []
-viewplot_rotation_args(r::Tuple{Float64,Float64,Float64}) =  vcat("-viewangles", string.(r)) #  Set view angles in degrees (yaw, pitch, roll). Equivalent to -viewrotation with rotation matrix R_z(roll)*R_x(pitch-90)*R_z(yaw)
-viewplot_rotation_args(M) = vcat("-viewrotation", map(string, vec(Matrix(M)'))) # Generate row-major order
+viewplot_rotation_args(r::Tuple{Real,Real,Real}) = ["-viewangles", string.(r)...]
+viewplot_rotation_args(M::AbstractMatrix{T}) where {T<:Real} =
+    vcat("-viewrotation", map(string, vec(Matrix(M)'))) # Generate row-major order
 # radius
 viewplot_radius_args(::Nothing) = []
 viewplot_radius_args(r) = ["-viewradius", string(r)]
