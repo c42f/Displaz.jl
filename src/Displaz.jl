@@ -18,6 +18,10 @@ function __init__()
     set_displaz_cmd(get(ENV, "DISPLAZ_CMD", "displaz"))
 end
 
+# `run_displaz` is a mutable binding to a closure rather than a normal
+# `function` so we can swap it out for something else during testing.
+run_displaz = (args) -> run(`$_displaz_cmd $args`)
+
 # Convert julia array into a type name and type appropriate for putting in the
 # ply header
 ply_type_convert(a::AbstractArray{UInt8})    = ("uint8",   a)
@@ -337,7 +341,7 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
         label = "$seriestype [$nvertices vertices]"
     end
     addopt = _overwrite_label ? [] : "-add"
-    run(`$_displaz_cmd -script $addopt -server $(plotobj.name) -label $label -shader $shader -rmtemp $filename`)
+    run_displaz(`-script $addopt -server $(plotobj.name) -label $label -shader $shader -rmtemp $filename`)
     nothing
 end
 
@@ -412,7 +416,7 @@ function mutate!(plotobj::DisplazWindow, label::AbstractString, index::AbstractV
     filename = tempname()*".ply"
 
     write_ply_points(filename, nvertices, fields)
-    run(`$_displaz_cmd -script -modify -server $(plotobj.name) -label $label -shader generic_points.glsl $filename`)
+    run_displaz(`-script -modify -server $(plotobj.name) -label $label -shader generic_points.glsl $filename`)
     nothing
 
 end
@@ -446,7 +450,7 @@ using unix shell glob pattern syntax.
 """
 function clearplot(plotobj::DisplazWindow, patterns...)
     unload_args = isempty(patterns) ? ["-clear"] : ["-unload", patterns...]
-    run(`$_displaz_cmd -script -server $(plotobj.name) $unload_args`)
+    run_displaz(`-script -server $(plotobj.name) $unload_args`)
     nothing
 end
 clearplot(patterns...) = clearplot(current(), patterns...)
@@ -513,7 +517,7 @@ function plotimage(plotobj::DisplazWindow, texturefile::String, vertices::Abstra
         label = "$texturefile"
     end
     addopt = _overwrite_label ? [] : "-add"
-    run(`$_displaz_cmd -script $addopt -server $(plotobj.name) -label $label -rmtemp $filename`)
+    run_displaz(`-script $addopt -server $(plotobj.name) -label $label -rmtemp $filename`)
     nothing
 end
 
@@ -564,7 +568,7 @@ function viewplot(plotobj::DisplazWindow;
     center_args   = viewplot_center_args(center)
     radius_args   = viewplot_radius_args(radius)
     rotation_args = viewplot_rotation_args(rotation)
-    run(`$_displaz_cmd -script -server $(plotobj.name) $center_args $radius_args $rotation_args`)
+    run_displaz(`-script -server $(plotobj.name) $center_args $radius_args $rotation_args`)
     nothing
 end
 viewplot(; kwargs...) = viewplot(current(); kwargs...)
