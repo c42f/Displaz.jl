@@ -439,13 +439,13 @@ plot3d(position; kwargs...)  = plot3d(current(), position; kwargs...)
 
 #-------------------------------------------------------------------------------
 """
-    annotation([plotobj::DisplazWindow=current()], coords::Array{Real,1}, annotation::String)
+    annotation(plotobj::DisplazWindow, coords::Array{T,1}, text::String, label=text::String)
 
 Place a text annotation at given coordinates
 
 If not specified, `plotobj` is the current plot window.  coords is a three element array [x, y, z],
-text is the text to plot and label its displaz label, note annotation labels dont' appear in Displaz's list of data sets
-they are needed however to unload an annotation. If unspecified the label deaults to the annotation string.
+text is the text to plot and label its Displaz label, note annotation labels don't appear in Displaz's list of data sets
+they are needed however to unload an annotation. If unspecified the label defaults to the annotation string.
 """
 function annotation(plotobj::DisplazWindow, coords::Array{T,1}, text::String, label=text::String) where {T<:Real}
     run_displaz(`-script -server $(plotobj.name) -annotation $text $(coords[1]) $(coords[2]) $(coords[3]) -label $label`)
