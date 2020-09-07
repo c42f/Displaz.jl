@@ -2,7 +2,7 @@ module Displaz
 using StaticArrays
 using Colors
 
-export plot3d, plot3d!, plotimage, plotimage!, clearplot, viewplot
+export plot3d, plot3d!, plotimage, plotimage!, clearplot, viewplot, annotation
 export KeyEvent, CursorPosition, event_loop
 
 """
@@ -435,6 +435,25 @@ end
 # Plot to current window
 plot3d!(position; kwargs...) = plot3d!(current(), position; kwargs...)
 plot3d(position; kwargs...)  = plot3d(current(), position; kwargs...)
+
+
+#-------------------------------------------------------------------------------
+"""
+    annotation([plotobj::DisplazWindow=current()], coords::Array{Real,1}, annotation::String)
+
+Place a text annotation at given coordinates
+
+If not specified, `plotobj` is the current plot window.  coords is a three element array [x, y, z],
+text is the text to plot and label its displaz label, note annotation labels dont' appear in Displaz's list of data sets
+they are needed however to unload an annotation. If unspecified the label deaults to the annotation string.
+"""
+function annotation(plotobj::DisplazWindow, coords::Array{T,1}, text::String, label=text::String) where {T<:Real}
+    run_displaz(`-script -server $(plotobj.name) -annotation $text $(coords[1]) $(coords[2]) $(coords[3]) -label $label`)
+    nothing
+end
+annotation(coords::Array{T,1}, text::String, label::String) where {T<:Real} = annotation(current(), coords, text, label)
+annotation(coords::Array{T,1}, text::String) where {T<:Real} = annotation(current(), coords, text)
+annotation(text::String, coords::Array{T,1}) where {T<:Real} = annotation(current(), coords, text)
 
 
 #-------------------------------------------------------------------------------
