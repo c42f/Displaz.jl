@@ -47,6 +47,6 @@ end
 end
 
 @testset "annotation" begin
-    @test @displaz_args(annotation("Hello world", [0, 1, 2])) == `-script -server default -annotation "Hello world" 0 1 2 -label "Hello world"`
+    @test @displaz_args(annotation([0, 1, 2], "Hello world")) == `-script -server default -annotation "Hello world" 0 1 2 -label "Hello world"`
     @test @displaz_args(annotation([0, 1, 2], "Hello world", "A label")) == `-script -server default -annotation "Hello world" 0 1 2 -label "A label"`
 end
