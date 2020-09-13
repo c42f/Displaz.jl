@@ -439,7 +439,7 @@ plot3d(position; kwargs...)  = plot3d(current(), position; kwargs...)
 
 #-------------------------------------------------------------------------------
 """
-    annotation(plotobj::DisplazWindow, coords::Array{T,1}, text::String, label=text::String)
+    annotation([plotobj::DisplazWindow,] coords::Array{T,1}, text::String, label=text::String)
 
 Place a text annotation at given coordinates
 
