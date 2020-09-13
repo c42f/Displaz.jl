@@ -447,12 +447,8 @@ If not specified, `plotobj` is the current plot window.  coords is a three eleme
 text is the text to plot and label its Displaz label, note annotation labels don't appear in Displaz's list of data sets
 they are needed however to unload an annotation. If unspecified the label defaults to the annotation string.
 """
-<<<<<<< Updated upstream
-function annotation(plotobj::DisplazWindow, coords::Array{T,1}, text::String, label=text::String) where {T<:Real}
+function annotation(plotobj::DisplazWindow, coords::Array{T,1}, text::String, label=text::String)
     length(coords) == 3 || throw(ArgumentError("Length of coordinate vector must be 3"))
-=======
-function annotation(plotobj::DisplazWindow, coords::Vector{<:Real}, text::AbstractString, label=text::AbstractString)
->>>>>>> Stashed changes
     run_displaz(`-script -server $(plotobj.name) -annotation $text $(coords[1]) $(coords[2]) $(coords[3]) -label $label`)
     nothing
 end
