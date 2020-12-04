@@ -47,8 +47,8 @@ function event_loop(callback::Function, plotobj::DisplazWindow, event_list...)
   
     command = hook_command(plotobj.name, event_list...)
 
-    open(command, "r") do stdout
-        handle_events(callback, stdout)
+    open(command, "r") do event_stream
+        handle_events(callback, event_stream)
     end
 
 end
@@ -61,11 +61,10 @@ function hook_command(servername, event_list...)
     return `$_displaz_cmd -server $(servername) $(vcat(hookopts...))`
 end
 
-function handle_events(callback, stdout)
+function handle_events(callback, event_stream)
 
-    while !eof(stdout)
-        rawline = readline(stdout)
-        @show rawline
+    while !eof(event_stream)
+        rawline = readline(event_stream)
         line = split(rawline)
         if length(line) < 2
             @warn("Unrecognized displaz hook string: \"$line\"")
@@ -89,7 +88,7 @@ function handle_events(callback, stdout)
         end
         callback(event, arg) != false || break
     end
-    
+
 end
 
 event_loop(callback::Function, event_list...) = event_loop(callback, current(), event_list...)
