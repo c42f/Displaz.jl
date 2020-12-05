@@ -54,21 +54,21 @@ end
 @testset "hook" begin
 
     # first make sure the command is OK:
-    command = Displaz.hook_command("someserver",  
-                                KeyEvent("c")=>Nothing, 
-                                KeyEvent("p")=>CursorPosition)
-    
+    command = Displaz.hook_command("someserver",
+                                   KeyEvent("c")=>Nothing,
+                                   KeyEvent("p")=>CursorPosition)
+
     @test command == `$(Displaz._displaz_cmd) -server someserver -hook key:c null -hook key:p cursor`
 
     # prepare some fake Displaz outputs:
-    lines = ["key:c null", 
+    lines = ["key:c null",
              "key:p cursor 0 0 0"]
     event_stream = IOBuffer()
     foreach(l -> write(event_stream, l * "\n"), lines)
     seek(event_stream, 0)
 
     # prepare our received events buffer and a callback function:
-    received = Vector{Any}() 
+    received = Vector{Any}()
     callback(x...) = push!(received, x)
 
     # this should plow through our fake output lines and return:

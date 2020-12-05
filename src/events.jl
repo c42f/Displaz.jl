@@ -44,13 +44,11 @@ end
 ```
 """
 function event_loop(callback::Function, plotobj::DisplazWindow, event_list...)
-  
     command = hook_command(plotobj.name, event_list...)
 
     open(command, "r") do event_stream
         handle_events(callback, event_stream)
     end
-
 end
 
 function hook_command(servername, event_list...)
