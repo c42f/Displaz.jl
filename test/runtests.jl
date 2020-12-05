@@ -63,16 +63,16 @@ end
     # prepare some fake Displaz outputs:
     lines = ["key:c null", 
              "key:p cursor 0 0 0"]
-    stdout = IOBuffer()
-    foreach(l -> write(stdout, l * "\n"), lines)
-    seek(stdout, 0)
+    event_stream = IOBuffer()
+    foreach(l -> write(event_stream, l * "\n"), lines)
+    seek(event_stream, 0)
 
     # prepare our received events buffer and a callback function:
     received = Vector{Any}() 
     callback(x...) = push!(received, x)
 
     # this should plow through our fake output lines and return:
-    Displaz.handle_events(callback, stdout)
+    Displaz.handle_events(callback, event_stream)
 
     # see if we got what we expected:
     @test length(received) == 2
