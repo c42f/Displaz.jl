@@ -50,3 +50,33 @@ end
     @test @displaz_args(annotation([0, 1, 2], "Hello world")) == `-script -server default -annotation "Hello world" 0 1 2 -label "Hello world"`
     @test @displaz_args(annotation([0, 1, 2], "Hello world", "A label")) == `-script -server default -annotation "Hello world" 0 1 2 -label "A label"`
 end
+
+@testset "hook" begin
+
+    # first make sure the command is OK:
+    command = Displaz.hook_command("someserver",  
+                                KeyEvent("c")=>Nothing, 
+                                KeyEvent("p")=>CursorPosition)
+    
+    @test command == `$(Displaz._displaz_cmd) -server someserver -hook key:c null -hook key:p cursor`
+
+    # prepare some fake Displaz outputs:
+    lines = ["key:c null", 
+             "key:p cursor 0 0 0"]
+    event_stream = IOBuffer()
+    foreach(l -> write(event_stream, l * "\n"), lines)
+    seek(event_stream, 0)
+
+    # prepare our received events buffer and a callback function:
+    received = Vector{Any}() 
+    callback(x...) = push!(received, x)
+
+    # this should plow through our fake output lines and return:
+    Displaz.handle_events(callback, event_stream)
+
+    # see if we got what we expected:
+    @test length(received) == 2
+    @test received[1] == (KeyEvent("c"), nothing)
+    @test received[2] == (KeyEvent("p"), CursorPosition([0.0, 0.0, 0.0]))
+
+end

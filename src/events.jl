@@ -44,35 +44,51 @@ end
 ```
 """
 function event_loop(callback::Function, plotobj::DisplazWindow, event_list...)
+  
+    command = hook_command(plotobj.name, event_list...)
+
+    open(command, "r") do event_stream
+        handle_events(callback, event_stream)
+    end
+
+end
+
+function hook_command(servername, event_list...)
+
     hookopts = [["-hook", _eventspec_str(e), _argspec_str(p)]
-                for (e,p) in event_list]
-    stdout,stdin,proc = readandwrite(`$_displaz_cmd -server $(plotobj.name) $(vcat(hookopts...))`)
-    while true
-        rawline = readline(stdout)
+    for (e,p) in event_list]
+
+    return `$_displaz_cmd -server $(servername) $(vcat(hookopts...))`
+end
+
+function handle_events(callback, event_stream)
+
+    while !eof(event_stream)
+        rawline = readline(event_stream)
         line = split(rawline)
         if length(line) < 2
-            warn("Unrecognized displaz hook string: \"$line\"")
+            @warn("Unrecognized displaz hook string: \"$line\"")
             break
         end
         eventspec = line[1]
         if startswith(eventspec, "key:")
             event = KeyEvent(eventspec[5:end])
         else
-            warn("Unrecognized displaz event type: \"$eventspec\"")
+            @warn("Unrecognized displaz event type: \"$eventspec\"")
             event = eventspec
         end
         argspec = line[2]
         if argspec == "null"
-            arg = :nothing
+            arg = nothing
         elseif argspec == "cursor"
             arg = CursorPosition(map(s->parse(Float64,s), line[3:end]))
         else
-            warn("Unrecognized displaz hook payload: \"$argspec\"")
+            @warn("Unrecognized displaz hook payload: \"$argspec\"")
             arg = line[3:end]
         end
         callback(event, arg) != false || break
     end
-    kill(proc)
+
 end
 
 event_loop(callback::Function, event_list...) = event_loop(callback, current(), event_list...)
