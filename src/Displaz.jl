@@ -210,7 +210,7 @@ end
 
 struct convert_values{T} end
 
-convert_values{:classification}(v)  = (v isa Integer) ? UInt8(v) : error("$(v) -CCclassification must be integer.")
+convert_values{:classification}(v)  = (v isa Integer) ? UInt8(v) : error("classification must be integer.")
 convert_values{:intensity}(v) = (v isa Real) ? Float32(v) : error("intensity must be real.")
 convert_values{:returnNumber}(v) = (v isa Integer) ? Int(v) : error("returnNumber must be integer.")
 convert_values{:numberOfReturns}(v) = (v isa Integer) ? Int(v) : error("numberOfReturns must be integer.")
