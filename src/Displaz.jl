@@ -208,6 +208,14 @@ function newfigure()
     figure(id)
 end
 
+struct convert_values{T} end
+
+convert_values{:classification}(v)  = (v isa Integer) ? UInt8(v) : error("classification must be integer.")
+convert_values{:intensity}(v) = (v isa Real) ? Float32(v) : error("intensity must be real.")
+convert_values{:returnNumber}(v) = (v isa Integer) ? Int(v) : error("returnNumber must be integer.")
+convert_values{:numberOfReturns}(v) = (v isa Integer) ? Int(v) : error("numberOfReturns must be integer.")
+
+convert_values{S}(v) where {S} = (v isa Real) ? v : error("Only provide numeric data, please.")
 
 """
 Add 3D points or lines to the current plot.
@@ -303,9 +311,13 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
         color = repeat(color, 1, nvertices)
     end
 
-    # works for vectors only at this stage...
-    extra_fields = ((x -> (size(x[2]) == (nvertices,) || error("extra fields must be vectors of same length as number of points in position array") ;
-        (x[1], array_semantic, transpose(Float32.(x[2])))) for x = pairs(kwargs)))
+    extra_input_pairs = collect(pairs(kwargs))
+
+    if any(p -> length(p[2]) != nvertices, extra_input_pairs)
+        error("extra fields must be vectors of same length as number of points in position array")
+    end
+
+    extra_fields = map(x -> (x[1], array_semantic, transpose(convert_values{x[1]}.(x[2]))), extra_input_pairs)
 
     # Ensure all fields are floats for now, to avoid surprising scaling in the
     # shader
@@ -344,7 +356,6 @@ function plot3d(plotobj::DisplazWindow, position; color=[1,1,1], markersize=[0.1
     run_displaz(`-script $addopt -server $(plotobj.name) -label $label -shader $shader -rmtemp $filename`)
     nothing
 end
-
 
 """
     mutate!([plotobj,] label, index; attr1=value1, ...))
