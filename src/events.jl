@@ -20,7 +20,7 @@ _argspec_str(::Type{CursorPosition}) = "cursor"
 
 
 """
-    event_loop(callback::Function, [plotobj::DisplazWindow], event_list...)
+    event_loop(callback::Function, [plotobj::DisplazWindow], event_list...; kwargs...)
 
 Subscribe to a list of events, calling `callback` each time one is received.
 
@@ -43,11 +43,11 @@ Displaz.event_loop(
 end
 ```
 """
-function event_loop(callback::Function, plotobj::DisplazWindow, event_list...)
+function event_loop(callback::Function, plotobj::DisplazWindow, event_list...; kwargs...)
     command = hook_command(plotobj.name, event_list...)
 
     open(command, "r") do event_stream
-        handle_events(callback, event_stream)
+        handle_events(callback, event_stream; kwargs...)
     end
 end
 
@@ -59,7 +59,7 @@ function hook_command(servername, event_list...)
     return `$_displaz_cmd -server $(servername) $(vcat(hookopts...))`
 end
 
-function handle_events(callback, event_stream)
+function handle_events(callback, event_stream; kwargs...)
 
     while !eof(event_stream)
         rawline = readline(event_stream)
@@ -84,12 +84,12 @@ function handle_events(callback, event_stream)
             @warn("Unrecognized displaz hook payload: \"$argspec\"")
             arg = line[3:end]
         end
-        callback(event, arg) != false || break
+        callback(event, arg; kwargs...) != false || break
     end
 
 end
 
-event_loop(callback::Function, event_list...) = event_loop(callback, current(), event_list...)
+event_loop(callback::Function, event_list...; kwargs...) = event_loop(callback, current(), event_list...; kwargs...)
 
 # Wait until the given displaz event occurs
 Base.wait(event::KeyEvent) = event_loop((e,a)->false, event=>Nothing)
