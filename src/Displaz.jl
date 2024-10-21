@@ -384,7 +384,7 @@ function mutate!(plotobj::DisplazWindow, label::AbstractString, index::AbstractV
 
     for (fieldname, fielddata) ∈ kwargs
         if fieldname == :position
-            fielddaata = interpret_position(fielddata)
+            fielddata = interpret_position(fielddata)
             size(fielddata) == (3,nvertices) || error("position must be a 3x$nvertices array")
 
             push!(fields, (:position, vector_semantic, fielddata))
@@ -413,6 +413,12 @@ function mutate!(plotobj::DisplazWindow, label::AbstractString, index::AbstractV
             fielddata = interpret_linebreak(fielddata)
 
             push!(fields, (:linebreak, array_semantic, vec(fielddata)'))
+        elseif fieldname == :classification
+            if length(fielddata) == 1
+                fielddata = repeat(fielddata, nvertices)
+            end
+            fielddata = map(UInt8, fielddata)
+            push!(fields, (:classification, array_semantic, vec(fielddata)'))
         else
             if length(fielddata) == 1
                 fielddata = repeat(fielddata, nvertices)
